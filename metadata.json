@@ -1,0 +1,6 @@
+{
+  "name": "PolarsBench Agent Sandbox",
+  "description": "A fully self-contained text-to-Polars agent testing environment with Python CLI scaffolding, ready to be exported for polarsbench.net submission.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
