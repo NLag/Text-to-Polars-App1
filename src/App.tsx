@@ -104,10 +104,9 @@ export default function App() {
                 This project includes the full Python repository structured for PolarsBench in its root directory.
               </p>
               <ul className="list-disc list-inside space-y-1 text-blue-300/80">
-                <li><code className="bg-blue-950 px-1 py-0.5 rounded">run.sh</code> - Execution Wrapper</li>
-                <li><code className="bg-blue-950 px-1 py-0.5 rounded">main.py</code> - CLI logic</li>
-                <li><code className="bg-blue-950 px-1 py-0.5 rounded">agent.py</code> - Google GenAI logic</li>
-                <li><code className="bg-blue-950 px-1 py-0.5 rounded">Dockerfile</code> & <code className="bg-blue-950 px-1 py-0.5 rounded">requirements.txt</code></li>
+                <li><code className="bg-blue-950 px-1 py-0.5 rounded">main.py</code> - FastAPI Application</li>
+                <li><code className="bg-blue-950 px-1 py-0.5 rounded">pyproject.toml</code> - Environment config</li>
+                <li><code className="bg-blue-950 px-1 py-0.5 rounded">requirements.txt</code> - Explicit dependencies</li>
               </ul>
             </div>
           </div>

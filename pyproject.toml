@@ -1,0 +1,13 @@
+[project]
+name = "submission"
+version = "0.1.0"
+description = "PolarsBench submission using Gemini 2.5 Pro"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
+    "pydantic>=2.0.0",
+    "google-genai>=1.3.0",
+    "polars>=1.0.0"
+]

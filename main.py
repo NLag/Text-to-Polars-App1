@@ -1,47 +1,74 @@
-import argparse
 import json
 import sys
 import os
-from agent import PolarsAgent
 
-def main():
-    parser = argparse.ArgumentParser(description="PolarsBench CLI - Text to Polars Agent")
-    parser.add_argument("--prompt", type=str, help="Natural language prompt describing the data transformation")
-    parser.add_argument("--schema", type=str, default="", help="Optional JSON schema or context of the data")
-    parser.add_argument("--input-json", type=str, help="Path to input JSON containing prompt and context (for runner compatibility)")
-    args = parser.parse_args()
+from fastapi import FastAPI
+from pydantic import BaseModel
+from google import genai
+from google.genai import types
 
-    prompt = args.prompt
-    schema = args.schema
+app = FastAPI()
 
-    # Read from JSON parameter file if provided by the evaluation runner
-    if args.input_json:
-        if os.path.exists(args.input_json):
-            try:
-                with open(args.input_json, 'r') as f:
-                    data = json.load(f)
-                    prompt = prompt or data.get("prompt", "")
-                    schema = schema or data.get("schema", "")
-            except Exception as e:
-                print(f"Error reading input JSON {args.input_json}: {e}", file=sys.stderr)
-                sys.exit(1)
-        else:
-            print(f"Error: Provided input file '{args.input_json}' does not exist.", file=sys.stderr)
-            sys.exit(1)
+class ChatRequest(BaseModel):
+    message: str
+    tables: dict
 
-    if not prompt:
-        print("Error: No prompt provided. Use --prompt or --input-json.", file=sys.stderr)
-        sys.exit(1)
+class ChatResponse(BaseModel):
+    response: str
+
+def strip_code_fence(text: str) -> str:
+    text = text.strip()
+    if text.startswith("```python"):
+        text = text[len("```python"):].strip()
+    elif text.startswith("```"):
+        text = text[len("```"):].strip()
+    if text.endswith("```"):
+        text = text[:-3].strip()
+    return text
+
+@app.get("/")
+def health():
+    return {"status": "ok"}
+
+@app.post("/chat", response_model=ChatResponse)
+def chat(payload: ChatRequest) -> ChatResponse:
+    # Get API key from environment
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY environment variable is required.")
+
+    client = genai.Client(api_key=api_key)
+    model_id = 'gemini-2.5-pro'
+
+    system_instruction = (
+        "Return only valid Python Polars code. "
+        "No markdown fences. "
+        "Assign the final Polars DataFrame to result. "
+        f"Available datasets: {json.dumps(payload.tables, ensure_ascii=False)}"
+    )
+
+    config = types.GenerateContentConfig(
+        system_instruction=system_instruction,
+        temperature=0.0,
+        top_p=0.95,
+        top_k=40,
+        max_output_tokens=4096,
+    )
 
     try:
-        agent = PolarsAgent()
-        code = agent.generate(prompt, schema)
+        response = client.models.generate_content(
+            model=model_id,
+            contents=payload.message,
+            config=config
+        )
         
-        # The runner extracts stdout, so print ONLY the resulting code output.
-        print(code)
+        result_code = strip_code_fence(response.text)
+        return ChatResponse(response=result_code)
     except Exception as e:
-        print(f"Error executing agent: {e}", file=sys.stderr)
-        sys.exit(1)
+        print(f"Agent Generation Error: {e}", file=sys.stderr)
+        return ChatResponse(response="")
 
 if __name__ == "__main__":
-    main()
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
+
